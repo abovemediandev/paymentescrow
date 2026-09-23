@@ -548,14 +548,20 @@ contract PaymentEscrow_Version1 is Context {
     function setSellerSettings(uint256 _minSize, uint256 _disputeWindow, address _desiredArbitrator) external {
         require(_minSize > 0, "Cannot have a zero minimum trade size");
         require(_desiredArbitrator != address(0) && _desiredArbitrator != _msgSender(), "Arbitrator is invalid or disallowed");
+        require(_disputeWindow < 365 days, "Dispute window is too long");
         SellerSettings storage _settings = _sellerSettings[_msgSender()];
         _settings.currentMinPurchaseSize = _minSize;
         _settings.currentDisputeWindow = _disputeWindow;
         _settings.currentArbitrator = _desiredArbitrator;
     }
 
+    function generatePurchaseCode(address _seller, address _buyer, uint256 _purchaseSize, uint256 _uniqueCode) public pure returns (bytes32) {
+        // Purchase codes are based on the seller, buyer, purchase amount and unique integer code generated off-chain
+        return keccak256(abi.encode(_seller, _buyer, _purchaseSize, _uniqueCode));
+    }
+
     // Buyer makes a purchase
-    function makePurchase(address _seller, bytes32 _purchaseCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration) external {
+    function makePurchase(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration) external {
         // Make sure we cancel the purchase attempt if the transaction is in the mempool for too long
         require(block.timestamp < _quoteExpiration, "Purchase attempt has expired");
 
@@ -566,10 +572,11 @@ contract PaymentEscrow_Version1 is Context {
         require(_settings.currentArbitrator == _arbitrator, "Arbitrator not mutually agreed");
         require(_arbitrator != _msgSender(), "Arbitrator cannot also be a purchaser");
         require(_seller != _msgSender(), "Seller and purchaser cannot be the same");
-        require(_settings.currentDisputeWindow == _disputeWindow, "Dispute window mismatch");
+        require(_settings.currentDisputeWindow == _disputeWindow, "Dispute window not mutually agreed");
         require(_purchaseSize >= _settings.currentMinPurchaseSize && _settings.currentMinPurchaseSize > 0, "Purchase amount below minimum set by seller");
 
         // Check to make sure this is a newly used purchase code
+        bytes32 _purchaseCode = generatePurchaseCode(_seller, _msgSender(), _purchaseSize, _uniqueCode);
         Purchase storage _purchase  = _purchaseInformation[_seller][_purchaseCode];
         require(_purchase.purchaseStatus == 0, "This purchase code has already been used");
         _purchase.purchaseStatus = 1; // New purchase
