@@ -614,10 +614,7 @@ contract PaymentEscrow_Version1 is Context {
 
         if(_claimableBalance > 0){
             // Now execute the transfer
-            uint256 _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_msgSender());
             IERC20(tradeCurrencyAddress).safeTransfer(_msgSender(), _claimableBalance);
-            _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_msgSender()).sub(_targetBalance);
-            require(_targetBalance == _claimableBalance, "Unable to transfer claim");
         }
     }
 
@@ -638,10 +635,7 @@ contract PaymentEscrow_Version1 is Context {
         }
 
         // Now execute the transfers
-        uint256 _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser);
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
-        _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser).sub(_targetBalance);
-        require(_targetBalance == _purchase.purchaseSize, "Unable to transfer refund");
     }
 
     // Buyer functions
@@ -666,10 +660,7 @@ contract PaymentEscrow_Version1 is Context {
         _purchase.purchaseStatus = 10;
 
         // Now execute the transfers
-        uint256 _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser);
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
-        _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser).sub(_targetBalance);
-        require(_targetBalance == _purchase.purchaseSize, "Unable to transfer clawback");
     }
 
     // Arbitrator functions
@@ -691,10 +682,7 @@ contract PaymentEscrow_Version1 is Context {
         _purchase.purchaseStatus = 5;
 
         // Now execute the transfers
-        uint256 _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser);
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
-        _targetBalance = IERC20(tradeCurrencyAddress).balanceOf(_purchase.purchaser).sub(_targetBalance);
-        require(_targetBalance == _purchase.purchaseSize, "Unable to transfer refund");
     }
 
 }
