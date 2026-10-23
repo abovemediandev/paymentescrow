@@ -447,6 +447,10 @@ library SafeERC20 {
     }
 }
 
+interface PermitToken{
+    function permit(address owner, address spender, uint256 value, uint256 deadline, bytes calldata signature) external;
+}
+
 // File: @openzeppelin/contracts/GSN/Context.sol
 
 /*
@@ -516,6 +520,8 @@ contract PaymentEscrow_Version1 is Context {
 
     // Make it easier for APIs to grab data from RPC services
     event PurchaseEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseSize, uint256 purchaseTime, uint256 disputeWindow, address arbitrator);
+    event DisputeEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 disputeTime);
+    event ArbitrationEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseStatus);
     
     // Private Mappings
     mapping(address => SellerSettings) private _sellerSettings;
@@ -560,8 +566,15 @@ contract PaymentEscrow_Version1 is Context {
         return keccak256(abi.encode(_seller, _buyer, _purchaseSize, _uniqueCode));
     }
 
+    // An alternative to makePurchase that handles the user's approval and purchase in one step
+    function makePurchaseWithPermit(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration, bytes memory _permitSignature) external {
+        PermitToken token = PermitToken(tradeCurrencyAddress);
+        token.permit(_msgSender(), address(this), _purchaseSize, _quoteExpiration, _permitSignature);
+        makePurchase(_seller, _uniqueCode, _purchaseSize, _disputeWindow, _arbitrator, _quoteExpiration);
+    }
+
     // Buyer makes a purchase
-    function makePurchase(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration) external {
+    function makePurchase(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration) public {
         // Make sure we cancel the purchase attempt if the transaction is in the mempool for too long
         require(block.timestamp < _quoteExpiration, "Purchase attempt has expired");
 
@@ -655,6 +668,8 @@ contract PaymentEscrow_Version1 is Context {
         require(_purchase.purchaseTime + _purchase.disputeWindow > block.timestamp, "Can no longer initiate a dispute");
         _purchase.disputeTime = block.timestamp; // Start the countdown for when the purchase can be clawed back
         _purchase.purchaseStatus = 4;
+
+        emit DisputeEvent(_seller, _msgSender(), _purchaseCode, _purchase.disputeTime);
     }
 
     function buyerClawbackPurchase(address _seller, bytes32 _purchaseCode) external {
@@ -678,6 +693,9 @@ contract PaymentEscrow_Version1 is Context {
         require(_purchase.arbitrator == _msgSender(), "Only the arbitrator can resolve");
         require(_purchase.purchaseStatus == 4, "Purchase is not in dispute");
         _purchase.purchaseStatus = 6;
+
+        // Emit the event
+        emit ArbitrationEvent(_seller, _purchase.purchaser, _purchaseCode, _purchase.purchaseStatus);
     }
 
     function arbitratorRefundBuyer(address _seller, bytes32 _purchaseCode) external {
@@ -687,6 +705,9 @@ contract PaymentEscrow_Version1 is Context {
         require(_purchase.arbitrator == _msgSender(), "Only the arbitrator can resolve");
         require(_purchase.purchaseStatus == 4, "Purchase is not in dispute");
         _purchase.purchaseStatus = 5;
+
+        // Emit the event
+        emit ArbitrationEvent(_seller, _purchase.purchaser, _purchaseCode, _purchase.purchaseStatus);
 
         // Now execute the transfers
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
