@@ -448,7 +448,7 @@ library SafeERC20 {
 }
 
 interface PermitToken{
-    function permit(address owner, address spender, uint256 value, uint256 deadline, bytes calldata signature) external;
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
 // File: @openzeppelin/contracts/GSN/Context.sol
@@ -567,9 +567,9 @@ contract PaymentEscrow_Version1 is Context {
     }
 
     // An alternative to makePurchase that handles the user's approval and purchase in one step
-    function makePurchaseWithPermit(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration, bytes memory _permitSignature) external {
+    function makePurchaseWithPermit(address _seller, uint256 _uniqueCode, uint256 _purchaseSize, uint256 _disputeWindow, address _arbitrator, uint256 _quoteExpiration, uint8 permitV, bytes32 permitR, bytes32 permitS) external {
         PermitToken token = PermitToken(tradeCurrencyAddress);
-        token.permit(_msgSender(), address(this), _purchaseSize, _quoteExpiration, _permitSignature);
+        token.permit(_msgSender(), address(this), _purchaseSize, _quoteExpiration, permitV, permitR, permitS);
         makePurchase(_seller, _uniqueCode, _purchaseSize, _disputeWindow, _arbitrator, _quoteExpiration);
     }
 
