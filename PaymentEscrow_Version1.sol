@@ -522,6 +522,8 @@ contract PaymentEscrow_Version1 is Context {
     event PurchaseEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseSize, uint256 purchaseTime, uint256 disputeWindow, address arbitrator);
     event DisputeEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 disputeTime);
     event ArbitrationEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseStatus);
+    event ClaimEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseStatus);
+    event RefundEvent(address indexed seller, address indexed purchaser, bytes32 indexed purchaseCode, uint256 purchaseStatus);
     
     // Private Mappings
     mapping(address => SellerSettings) private _sellerSettings;
@@ -630,6 +632,7 @@ contract PaymentEscrow_Version1 is Context {
             }
 
             _claimableBalance += _purchase.purchaseSize;
+            emit ClaimEvent(_msgSender(), _purchase.purchaser, _purchaseCodes[it], _purchase.purchaseStatus);
         }
 
         if(_claimableBalance > 0){
@@ -653,6 +656,8 @@ contract PaymentEscrow_Version1 is Context {
             // Seller refunded after arbitrator ruled in its favor
             _purchase.purchaseStatus = 8;
         }
+
+        emit RefundEvent(_msgSender(), _purchase.purchaser, _purchaseCode, _purchase.purchaseStatus);
 
         // Now execute the transfers
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
@@ -680,6 +685,8 @@ contract PaymentEscrow_Version1 is Context {
         require(_purchase.purchaseStatus == 4, "Purchase is not in dispute");
         require(_purchase.disputeTime + PURCHASE_EXPIRATION_TIME < block.timestamp, "Too soon to clawback");
         _purchase.purchaseStatus = 10;
+
+        emit RefundEvent(_seller, _purchase.purchaser, _purchaseCode, _purchase.purchaseStatus);
 
         // Now execute the transfers
         IERC20(tradeCurrencyAddress).safeTransfer(_purchase.purchaser, _purchase.purchaseSize);
