@@ -30,4 +30,4 @@ The arbitrator can either refund the buyer or resolve for seller if a dispute is
 This code comes with no guarantees, no warranty, and is provided as is. Use at your own risk. The developer is not responsible for loss from use of this code.
 
 ## Deployments
-Ethereum: https://etherscan.io/address/0x7d7f4d67bf954f58dbedba5b671a8f8767bffb83 (USDC)
+Ethereum: https://etherscan.io/address/0xB552a20abF8b73ECdB8735cd1DF53aDec88Cc2ce (USDC)
