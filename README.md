@@ -9,7 +9,7 @@ There is no owner to this contract. No fees for use. No payment to an arbitrator
 Sellers can setup their currently accepted arbitrator, minimum acceptable purchase amount and the length of the dispute window. Sellers can even disallow disputes if they set the dispute window to zero. Certain restrictions apply that can be viewed in the contract code.
 
 ### Buyer Purchase
-A buyer understands and agrees to the seller's options before making a purchase. These options are locked to the purchase even if the seller changes them afterwards. Using a unique (for the seller) bytes32 purchase code, the buyer makes a purchase via makePurchase function call.
+A buyer understands and agrees to the seller's options before making a purchase. These options are locked to the purchase even if the seller changes them afterwards. Using a unique buyer-provided nonce, the buyer makes a purchase via makePurchase (or makePurchaseWithPermit) function call.
 
 ### Seller Claim
 A seller can claim multiple purchase codes linked to their address simultaneously after the dispute window has ended.
